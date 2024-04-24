@@ -8,16 +8,20 @@ df_flood = pd.read_csv("../data/chennai-monthly-manual-flood.csv")
 df_rain = df_rain.drop(columns=['Total'])
 df_flood = df_flood[(df_flood.year <= 2021)]
 
+# merge datasets
+#   TODO: remove second 'year' column added by merging
+df = pd.merge(df_rain,df_flood, left_on='Year', right_on='year')
+
 import matplotlib.pyplot as plt
 
 # visualise data
-df_rain.plot(x="Year")
-df_flood.plot(x="year")
-plt.show()
+#df_rain.plot(x="Year")
+#df_flood.plot(x="year")
+#plt.show()
 
 # convert to arrays
-X = df_rain.drop(columns="Year").values
-y = df_flood.values
+X = df[df.columns[:-12]].drop(columns=["Year","year"]).values #df_rain.drop(columns="Year").values
+y = df[df.columns[-12:]].values #df_flood.values
 
 ### TODO: should data be balanced here? How can mostly false (0) be balanced?
 
