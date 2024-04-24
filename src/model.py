@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 # visualise data
 X.plot(x="Year")
 y.plot(x="year")
-plt.show()
+#plt.show()
 
 ### TODO: should data be balanced here? How can mostly false (0) be balanced?
 
@@ -25,5 +25,16 @@ X_train, X_test, y_train, y_test = train_test_split(X,y, test_size=0.2, random_s
 # train-validation split
 X_train, X_val, y_train, y_val = train_test_split(X_train,y_train, test_size=0.1, random_state=42)
 
-### TODO: normalise data here
+from sklearn.preprocessing import MinMaxScaler
+
+# normalise data
+#   TODO: replace sklearn with tf
+#         retain year coloumn, months if possible
+scaler = MinMaxScaler()
+X_train_normalised = scaler.fit_transform(X_train.drop(columns="Year"))
+X_train = pd.DataFrame(X_train_normalised)
+
+X_train.plot()
+#plt.show()
+
 
