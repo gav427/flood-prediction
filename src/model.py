@@ -87,7 +87,7 @@ model = tf.keras.Sequential()
 model.add(tf.keras.layers.LSTM(units=128, input_shape=(X_train.shape[1], X_train.shape[2])))
 model.add(tf.keras.layers.Dropout(0.2)) # control overfitting
 model.add(tf.keras.layers.Dense(units=12, activation='sigmoid'))
-model.compile(loss='MeanSquaredError', optimizer='Adam')
+model.compile(loss='BinaryCrossentropy', optimizer='Adam', metrics=['accuracy'])
 model.summary()
 
 #print(X_train.shape[1])
@@ -99,17 +99,22 @@ cb = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
 history = model.fit(X_train, y_train, epochs=20, batch_size=1, verbose=1, callbacks=[cb])
 
 plt.plot(history.history['loss'])
-plt.ylabel("loss")
+plt.plot(history.history['accuracy'])
+plt.ylabel("loss / accuracy")
 plt.xlabel("Epoch")
+plt.legend(['loss','accuracy'])
 plt.show()
 
 # make prediction
 y_pred = model.predict(X_test)
+y_pred = np.where(y_pred > 0.5, 1, 0)
 y_pred = pd.DataFrame(y_pred, columns=list(df[df.columns[-12:]]))
 
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, accuracy_score, classification_report#, confusion_matrix
 
 # evaluate prediction
+model.evaluate(X_test, y_test)
+
 print("Actual:")
 print(pd.DataFrame(y_test, columns=list(df[df.columns[-12:]])))
 print("Predictions:")
@@ -117,3 +122,8 @@ print(y_pred)
 print("MSE:", mean_squared_error(y_test, y_pred))
 print("MAE:", mean_absolute_error(y_test, y_pred))
 print("R2:", r2_score(y_test, y_pred))
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+#print(confusion_matrix(y_test, y_pred))
+
+
