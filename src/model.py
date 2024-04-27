@@ -40,23 +40,41 @@ X_scaled = scaler.fit_transform(X) #scaler.fit_transform(X_train.drop(columns="Y
 X = pd.DataFrame(X_scaled, columns=list(X.columns))
 
 #plt.plot(X)
+#plt.title("MinMax")
 #plt.show()
+
+# lag and forecast (TODO: rewrite)
+LAG = 1
+FORE = 1
+cols, names = list(), list()
+for i in range(LAG, 0, -1):
+    cols.append(X.shift(i))
+    names += [('var%d(t-%d)' % (j+1, i)) for j in range(X.shape[1])] #NEXT: try fstring for j in X.columns
+for i in range(0, FORE):
+    cols.append(X.shift(-1))
+if i == 0:
+    names += [('var%d(t)' % (j+1)) for j in range(X.shape[1])]
+else:
+    names += [('var%d(t+%d)' % (j+1, i)) for j in range(X.shape[1])]
+#X = pd.concat(cols,axis=1) #TODO: TypeError: '<' not supported between instances of 'str' and 'int'
+#X.columns = names
+X.dropna(inplace=True)
 
 import numpy as np
 
-# reshape data
+# reshape data (TODO: rewrite)
 seq = 20
 dfX = []
 dfY = []
-for i in range(0,len(df) - seq):
+for i in range(0,len(X) - seq):
     data = []
     for j in range(0,seq):
         d = []
-        for col in df.columns:
-            d.append(df[col][i +j])
+        for col in X.columns:
+            d.append(X[col][i +j])
         data.append(d)
     dfX.append(data)
-    dfY.append(df[['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']].iloc[i + seq].values)
+    dfY.append(y[['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']].iloc[i + seq].values)
 X, y = np.array(dfX), np.array(dfY)
 
 # check shape after reshaping
@@ -85,7 +103,7 @@ import tensorflow as tf
 # LSTM
 model = tf.keras.Sequential()
 model.add(tf.keras.layers.LSTM(units=128, input_shape=(X_train.shape[1], X_train.shape[2])))
-model.add(tf.keras.layers.Dropout(0.2)) # control overfitting
+#model.add(tf.keras.layers.Dropout(0.2)) # drop data to control overfitting
 model.add(tf.keras.layers.Dense(units=12, activation='sigmoid'))
 model.compile(loss='BinaryCrossentropy', optimizer='Adam', metrics=['accuracy'])
 model.summary()
@@ -103,6 +121,7 @@ plt.plot(history.history['accuracy'])
 plt.ylabel("loss / accuracy")
 plt.xlabel("Epoch")
 plt.legend(['loss','accuracy'])
+plt.title("Training")
 plt.show()
 
 # make prediction
