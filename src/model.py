@@ -5,12 +5,15 @@ df_rain = pd.read_csv("../data/chennai-monthly-rains.csv")
 df_flood = pd.read_csv("../data/chennai-monthly-manual-flood.csv")
 
 # clean data
-df_rain = df_rain.drop(columns=['Total'])
-df_flood = df_flood[(df_flood.year <= 2021)]
+df_rain = df_rain[["Year","Dec"]]
+df_flood = df_flood[(df_flood.year <= 2021)][["year","dec"]]
 
 # merge datasets
 #   TODO: remove second 'year' column added by merging
 df = pd.merge(df_rain,df_flood, left_on='Year', right_on='year')
+
+# stats
+print(df[['Dec','dec']].describe())
 
 # check shape
 print("Original shape:", df.shape)
@@ -22,21 +25,35 @@ import matplotlib.pyplot as plt
 #df_flood.plot(x="year")
 #plt.show()
 
+import numpy as np
+
+# TODO: should data be balanced here? How can mostly false (0) be balanced?
+#   TODO: rewrite
+neg, pos = np.bincount(df['dec'])
+t = neg + pos
+print(f"Total: %d; positive: %d (%.2f%% of total)" % (t,pos,(100*pos/t)))
+
+# TODO: convert data to log-space?
+
 # data-target split
-X = df[df.columns[:-12]].drop(columns=["Year","year"]) #df_rain.drop(columns="Year").values
-y = df[df.columns[-12:]] #df_flood.values
+#   TODO: should this be done after data splitting?
+X = df[df.columns[:-1]].drop(columns=["Year","year"]) #df_rain.drop(columns="Year").values
+y = df[df.columns[-1:]] #df_flood.values
 
 # check shape after sampling target data
 print("X:",X.shape)
 print("y:",y.shape)
 
-### TODO: should data be balanced here? How can mostly false (0) be balanced?
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from sklearn.preprocessing import MinMaxScaler
+# z-score
+std_scaler = StandardScaler()
+X_zerod = std_scaler.fit_transform(X)
+X = pd.DataFrame(X_zerod, columns=list(X.columns))
 
 # normalise data
-scaler = MinMaxScaler()
-X_scaled = scaler.fit_transform(X) #scaler.fit_transform(X_train.drop(columns="Year"))
+minmax_scaler = MinMaxScaler()
+X_scaled = minmax_scaler.fit_transform(X) #scaler.fit_transform(X_train.drop(columns="Year"))
 X = pd.DataFrame(X_scaled, columns=list(X.columns))
 
 #plt.plot(X)
@@ -60,8 +77,6 @@ else:
 #X.columns = names
 X.dropna(inplace=True)
 
-import numpy as np
-
 # reshape data (TODO: rewrite)
 seq = 20
 dfX = []
@@ -74,7 +89,7 @@ for i in range(0,len(X) - seq):
             d.append(X[col][i +j])
         data.append(d)
     dfX.append(data)
-    dfY.append(y[['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']].iloc[i + seq].values)
+    dfY.append(y[['dec']].iloc[i + seq].values)
 X, y = np.array(dfX), np.array(dfY)
 
 # check shape after reshaping
@@ -94,27 +109,45 @@ print("X_train:",X_train.shape,"X_test:",X_test.shape)
 print("y_train:",y_train.shape,"y_test:",y_test.shape)
 print("X_val:",X_val.shape,"y_val:",y_val.shape)
 
-
 import tensorflow as tf
 
 # force GPU
 #with tf.device('/GPU:0'):
 
+# define metrics
+METRICS = [
+    tf.keras.metrics.BinaryAccuracy(name='accuracy'),
+    tf.keras.metrics.BinaryCrossentropy(name='log loss'),
+    tf.keras.metrics.TruePositives(name='TP'),
+    tf.keras.metrics.TrueNegatives(name='TN'),
+    tf.keras.metrics.FalsePositives(name='FP'),
+    tf.keras.metrics.FalseNegatives(name='FN'),
+    tf.keras.metrics.Precision(name='precision'),
+    tf.keras.metrics.Recall(name='recall'),
+]
+
 # LSTM
 model = tf.keras.Sequential()
-model.add(tf.keras.layers.LSTM(units=128, input_shape=(X_train.shape[1], X_train.shape[2])))
-#model.add(tf.keras.layers.Dropout(0.2)) # drop data to control overfitting
-model.add(tf.keras.layers.Dense(units=12, activation='sigmoid'))
-model.compile(loss='BinaryCrossentropy', optimizer='Adam', metrics=['accuracy'])
+model.add(tf.keras.Input((X_train.shape[1], X_train.shape[2])))
+model.add(tf.keras.layers.LSTM(units=128))
+model.add(tf.keras.layers.Dropout(0.2)) # drop data to control overfitting
+model.add(tf.keras.layers.Dense(units=1, activation='sigmoid', bias_initializer=tf.keras.initializers.Constant(np.log([pos/neg]))))
+model.compile(loss='BinaryCrossentropy', optimizer='Adam', metrics=METRICS)
 model.summary()
 
 #print(X_train.shape[1])
 
 # enable early stopping
-cb = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
+cb = tf.keras.callbacks.EarlyStopping(monitor='val_prc', verbose=1, patience=3, mode='max', restore_best_weights=True)
+
+# create class weights  (TODO: rewrite)
+weight_neg = (1 / neg) * (t / 2.0)
+weight_pos = (1 / pos) * (t / 2.0)
+
+weights = {0: weight_neg, 1: weight_pos}; print("Weights:", weights)
 
 # training
-history = model.fit(X_train, y_train, epochs=20, batch_size=1, verbose=1, callbacks=[cb])
+history = model.fit(X_train, y_train, epochs=20, batch_size=1, validation_data=(X_val, y_val), class_weight=weights, verbose=1, callbacks=[cb])
 
 plt.plot(history.history['loss'])
 plt.plot(history.history['accuracy'])
@@ -126,16 +159,16 @@ plt.show()
 
 # make prediction
 y_pred = model.predict(X_test)
-y_pred = np.where(y_pred > 0.5, 1, 0)
-y_pred = pd.DataFrame(y_pred, columns=list(df[df.columns[-12:]]))
+y_pred = np.where(y_pred > 0.5325, 1, 0) # magic number = 0.026; with weights = ~0.5325
+y_pred = pd.DataFrame(y_pred, columns=list(df[df.columns[-1:]]))
 
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, accuracy_score, classification_report#, confusion_matrix
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, accuracy_score, classification_report, confusion_matrix
 
 # evaluate prediction
 model.evaluate(X_test, y_test)
 
 print("Actual:")
-print(pd.DataFrame(y_test, columns=list(df[df.columns[-12:]])))
+print(pd.DataFrame(y_test, columns=list(df[df.columns[-1:]])))
 print("Predictions:")
 print(y_pred)
 print("MSE:", mean_squared_error(y_test, y_pred))
@@ -143,6 +176,6 @@ print("MAE:", mean_absolute_error(y_test, y_pred))
 print("R2:", r2_score(y_test, y_pred))
 print("Accuracy:", accuracy_score(y_test, y_pred))
 print(classification_report(y_test, y_pred))
-#print(confusion_matrix(y_test, y_pred))
+print(confusion_matrix(y_test, y_pred))
 
 
