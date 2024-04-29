@@ -110,35 +110,55 @@ print("y_train:",y_train.shape,"y_test:",y_test.shape)
 print("X_val:",X_val.shape,"y_val:",y_val.shape)
 
 import tensorflow as tf
+import keras_tuner as kt
 
-# force GPU
-#with tf.device('/GPU:0'):
+def build_model(hp):
 
-# define metrics
-METRICS = [
-    tf.keras.metrics.BinaryAccuracy(name='accuracy'),
-    tf.keras.metrics.BinaryCrossentropy(name='log loss'),
-    tf.keras.metrics.TruePositives(name='TP'),
-    tf.keras.metrics.TrueNegatives(name='TN'),
-    tf.keras.metrics.FalsePositives(name='FP'),
-    tf.keras.metrics.FalseNegatives(name='FN'),
-    tf.keras.metrics.Precision(name='precision'),
-    tf.keras.metrics.Recall(name='recall'),
-]
+    # hyper parameter tuning
+    hp_units = hp.Int('units', min_value=32, max_value=512, step=32)
+    hp_learning_rate = hp.Choice('learning_rate', values=[1e-2, 1e-3, 1e-4])
 
-# LSTM
-model = tf.keras.Sequential()
-model.add(tf.keras.Input((X_train.shape[1], X_train.shape[2])))
-model.add(tf.keras.layers.LSTM(units=128))
-model.add(tf.keras.layers.Dropout(0.2)) # drop data to control overfitting
-model.add(tf.keras.layers.Dense(units=1, activation='sigmoid', bias_initializer=tf.keras.initializers.Constant(np.log([pos/neg]))))
-model.compile(loss='BinaryCrossentropy', optimizer='Adam', metrics=METRICS)
-model.summary()
+    # force GPU
+    #with tf.device('/GPU:0'):
 
-#print(X_train.shape[1])
+    # define metrics
+    METRICS = [
+        tf.keras.metrics.BinaryAccuracy(name='accuracy'),
+        tf.keras.metrics.BinaryCrossentropy(name='log loss'),
+        tf.keras.metrics.TruePositives(name='TP'),
+        tf.keras.metrics.TrueNegatives(name='TN'),
+        tf.keras.metrics.FalsePositives(name='FP'),
+        tf.keras.metrics.FalseNegatives(name='FN'),
+        tf.keras.metrics.Precision(name='precision'),
+        tf.keras.metrics.Recall(name='recall'),
+        tf.keras.metrics.AUC(name='prc', curve='PR')
+    ]
+
+    # LSTM
+    model = tf.keras.Sequential()
+    model.add(tf.keras.Input((X_train.shape[1], X_train.shape[2])))
+    model.add(tf.keras.layers.LSTM(units=hp_units))
+    model.add(tf.keras.layers.Dropout(0.2)) # drop data to control overfitting
+    model.add(tf.keras.layers.Dense(units=1, activation='sigmoid', bias_initializer=tf.keras.initializers.Constant(np.log([pos/neg]))))
+    model.compile(loss='BinaryCrossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=hp_learning_rate), metrics=METRICS)
+    model.summary()
+
+    #print(X_train.shape[1])
+
+    return model
 
 # enable early stopping
 cb = tf.keras.callbacks.EarlyStopping(monitor='val_prc', verbose=1, patience=3, mode='max', restore_best_weights=True)
+
+# hyperparameter search
+tuner = kt.Hyperband(build_model, objective=kt.Objective('prc', direction='max'), max_epochs=10, factor=3)
+tuner.search(X_train, y_train, epochs=50, callbacks=[cb])
+best_hp = tuner.get_best_hyperparameters(num_trials=1)[0]
+
+print(best_hp.get('units'), best_hp.get('learning_rate'))
+
+# use best model
+model = tuner.hypermodel.build(best_hp)
 
 # create class weights  (TODO: rewrite)
 weight_neg = (1 / neg) * (t / 2.0)
@@ -177,5 +197,4 @@ print("R2:", r2_score(y_test, y_pred))
 print("Accuracy:", accuracy_score(y_test, y_pred))
 print(classification_report(y_test, y_pred))
 print(confusion_matrix(y_test, y_pred))
-
 
