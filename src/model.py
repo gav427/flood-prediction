@@ -60,6 +60,16 @@ X = pd.DataFrame(X_scaled, columns=list(X.columns))
 #plt.title("MinMax")
 #plt.show()
 
+from imblearn.over_sampling import SMOTE
+#from imblearn.under_sampling import RandomUnderSampler
+
+# over- (SMOTE) and under-sampling
+oversample = SMOTE(sampling_strategy=0.1, k_neighbors=2)
+#understample = RandomUnderSampler(sampling_strategy=0.5)
+
+X, y = oversample.fit_resample(X, y); print("Y",y)
+#X, y = understample.fit_resample(X, y)
+
 # lag and forecast (TODO: rewrite)
 LAG = 1
 FORE = 1
@@ -73,8 +83,8 @@ if i == 0:
     names += [('var%d(t)' % (j+1)) for j in range(X.shape[1])]
 else:
     names += [('var%d(t+%d)' % (j+1, i)) for j in range(X.shape[1])]
-#X = pd.concat(cols,axis=1) #TODO: TypeError: '<' not supported between instances of 'str' and 'int'
-#X.columns = names
+X = pd.concat(cols,axis=1)
+X.columns = names
 X.dropna(inplace=True)
 
 # reshape data (TODO: rewrite)
@@ -82,12 +92,7 @@ seq = 20
 dfX = []
 dfY = []
 for i in range(0,len(X) - seq):
-    data = []
-    for j in range(0,seq):
-        d = []
-        for col in X.columns:
-            d.append(X[col][i +j])
-        data.append(d)
+    data = [[X[col].iloc[i+j] for col in X.columns] for j in range(0,seq)]
     dfX.append(data)
     dfY.append(y[['dec']].iloc[i + seq].values)
 X, y = np.array(dfX), np.array(dfY)
@@ -135,6 +140,7 @@ def build_model(hp):
     ]
 
     # LSTM
+    #   TODO: add new layers with a loop controlled by the tuner (for the slowest training ever!)
     model = tf.keras.Sequential()
     model.add(tf.keras.Input((X_train.shape[1], X_train.shape[2])))
     model.add(tf.keras.layers.LSTM(units=hp_units))
