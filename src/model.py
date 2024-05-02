@@ -27,8 +27,8 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-# TODO: should data be balanced here? How can mostly false (0) be balanced?
-#   TODO: rewrite
+# check data balance
+# Adapted from: “Classification on imbalanced data | TensorFlow Core,” TensorFlow. https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
 neg, pos = np.bincount(df['dec'])
 t = neg + pos
 print(f"Total: %d; positive: %d (%.2f%% of total)" % (t,pos,(100*pos/t)))
@@ -70,24 +70,26 @@ oversample = SMOTE(sampling_strategy=0.1, k_neighbors=2)
 X, y = oversample.fit_resample(X, y); print("Y",y)
 #X, y = understample.fit_resample(X, y)
 
-# lag and forecast (TODO: rewrite)
+# lag and forecast
+# Adapted from: J. Brownlee, “How to Convert a Time Series to a Supervised Learning Problem in Python,” Machine Learning Mastery, May 07, 2017. https://machinelearningmastery.com/convert-time-series-supervised-learning-problem-python/
 LAG = 1
 FORE = 1
 cols, names = list(), list()
 for i in range(LAG, 0, -1):
     cols.append(X.shift(i))
-    names += [('var%d(t-%d)' % (j+1, i)) for j in range(X.shape[1])] #NEXT: try fstring for j in X.columns
+    names += [(f'var%d(t-%d)' % (j+1, i)) for j in range(X.shape[1])] #NEXT: try fstring for j in X.columns
 for i in range(0, FORE):
     cols.append(X.shift(-1))
 if i == 0:
-    names += [('var%d(t)' % (j+1)) for j in range(X.shape[1])]
+    names += [(f'var%d(t)' % (j+1)) for j in range(X.shape[1])]
 else:
-    names += [('var%d(t+%d)' % (j+1, i)) for j in range(X.shape[1])]
+    names += [(f'var%d(t+%d)' % (j+1, i)) for j in range(X.shape[1])]
 X = pd.concat(cols,axis=1)
 X.columns = names
 X.dropna(inplace=True)
 
-# reshape data (TODO: rewrite)
+# reshape data
+# Adapted from: S. S. Bhakta, “Multivariate Time Series Forecasting with LSTMs in Keras,” GeeksforGeeks, Feb. 17, 2024. https://www.geeksforgeeks.org/multivariate-time-series-forecasting-with-lstms-in-keras/ (accessed May 02, 2024).
 seq = 20
 dfX = []
 dfY = []
@@ -141,7 +143,6 @@ def build_model(hp):
     ]
 
     # LSTM
-    #   TODO: add new layers with a loop controlled by the tuner (for the slowest training ever!)
     model = tf.keras.Sequential()
     model.add(tf.keras.Input((X_train.shape[1], X_train.shape[2])))
     model.add(tf.keras.layers.LSTM(units=hp_units, return_sequences=True))
@@ -168,7 +169,8 @@ print(best_hp.get('units'), best_hp.get('learning_rate'))
 # use best model
 model = tuner.hypermodel.build(best_hp)
 
-# create class weights  (TODO: rewrite)
+# create class weights
+# Adapted from: “Classification on imbalanced data: Tensorflow Core,” TensorFlow, https://www.tensorflow.org/tutorials/structured_data/imbalanced_data (accessed May 2, 2024). 
 weight_neg = (1 / neg) * (t / 2.0)
 weight_pos = (1 / pos) * (t / 2.0)
 
