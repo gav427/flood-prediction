@@ -121,6 +121,7 @@ def build_model(hp):
 
     # hyper parameter tuning
     hp_units = hp.Int('units', min_value=32, max_value=512, step=32)
+    hp_units_2 = hp.Int('units', min_value=32, max_value=512, step=32)
     hp_learning_rate = hp.Choice('learning_rate', values=[1e-2, 1e-3, 1e-4])
 
     # force GPU
@@ -143,7 +144,8 @@ def build_model(hp):
     #   TODO: add new layers with a loop controlled by the tuner (for the slowest training ever!)
     model = tf.keras.Sequential()
     model.add(tf.keras.Input((X_train.shape[1], X_train.shape[2])))
-    model.add(tf.keras.layers.LSTM(units=hp_units))
+    model.add(tf.keras.layers.LSTM(units=hp_units, return_sequences=True))
+    model.add(tf.keras.layers.LSTM(units=hp_units_2))
     model.add(tf.keras.layers.Dropout(0.2)) # drop data to control overfitting
     model.add(tf.keras.layers.Dense(units=1, activation='sigmoid', bias_initializer=tf.keras.initializers.Constant(np.log([pos/neg]))))
     model.compile(loss='BinaryCrossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=hp_learning_rate), metrics=METRICS)
