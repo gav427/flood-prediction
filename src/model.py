@@ -5,15 +5,22 @@ df_rain = pd.read_csv("../data/chennai-monthly-rains.csv")
 df_flood = pd.read_csv("../data/chennai-monthly-manual-flood.csv")
 
 # clean data
-df_rain = df_rain[["Year","Dec"]]
-df_flood = df_flood[(df_flood.year <= 2021)][["year","dec"]]
+df_flood = df_flood[(df_flood.year <= 2021)]
 
 # merge datasets
 #   TODO: remove second 'year' column added by merging
 df = pd.merge(df_rain,df_flood, left_on='Year', right_on='year')
 
+# concat columns
+df = pd.concat([df, df[["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]].T.stack().reset_index(name='months_rain')['months_rain']], axis=1)
+df = pd.concat([df, df[["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"]].T.stack().reset_index(name='months_flood')['months_flood']], axis=1)
+
+# drop unnecessary columns
+df.drop(inplace=True, columns=["Year","Total","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"])
+df.drop(inplace=True, columns=["year","jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"])
+
 # stats
-print(df[['Dec','dec']].describe())
+print(df[['months_rain','months_flood']].describe())
 
 # check shape
 print("Original shape:", df.shape)
@@ -29,7 +36,7 @@ import numpy as np
 
 # check data balance
 # Adapted from: “Classification on imbalanced data | TensorFlow Core,” TensorFlow. https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
-neg, pos = np.bincount(df['dec'])
+neg, pos = np.bincount(df['months_flood'])
 t = neg + pos
 print(f"Total: %d; positive: %d (%.2f%% of total)" % (t,pos,(100*pos/t)))
 
@@ -37,7 +44,7 @@ print(f"Total: %d; positive: %d (%.2f%% of total)" % (t,pos,(100*pos/t)))
 
 # data-target split
 #   TODO: should this be done after data splitting?
-X = df[df.columns[:-1]].drop(columns=["Year","year"]) #df_rain.drop(columns="Year").values
+X = df[df.columns[:-1]] #.drop(columns=["Year","year"]) #df_rain.drop(columns="Year").values
 y = df[df.columns[-1:]] #df_flood.values
 
 # check shape after sampling target data
@@ -61,14 +68,14 @@ X = pd.DataFrame(X_scaled, columns=list(X.columns))
 #plt.show()
 
 from imblearn.over_sampling import SMOTE
-#from imblearn.under_sampling import RandomUnderSampler
+from imblearn.under_sampling import RandomUnderSampler
 
 # over- (SMOTE) and under-sampling
 oversample = SMOTE(sampling_strategy=0.1, k_neighbors=2)
-#understample = RandomUnderSampler(sampling_strategy=0.5)
+understample = RandomUnderSampler()
 
 X, y = oversample.fit_resample(X, y); print("Y",y)
-#X, y = understample.fit_resample(X, y)
+X, y = understample.fit_resample(X, y)
 
 # lag and forecast
 # Adapted from: J. Brownlee, “How to Convert a Time Series to a Supervised Learning Problem in Python,” Machine Learning Mastery, May 07, 2017. https://machinelearningmastery.com/convert-time-series-supervised-learning-problem-python/
@@ -96,7 +103,7 @@ dfY = []
 for i in range(0,len(X) - seq):
     data = [[X[col].iloc[i+j] for col in X.columns] for j in range(0,seq)]
     dfX.append(data)
-    dfY.append(y[['dec']].iloc[i + seq].values)
+    dfY.append(y[['months_flood']].iloc[i + seq].values)
 X, y = np.array(dfX), np.array(dfY)
 
 # check shape after reshaping
@@ -171,13 +178,13 @@ model = tuner.hypermodel.build(best_hp)
 
 # create class weights
 # Adapted from: “Classification on imbalanced data: Tensorflow Core,” TensorFlow, https://www.tensorflow.org/tutorials/structured_data/imbalanced_data (accessed May 2, 2024). 
-weight_neg = (1 / neg) * (t / 2.0)
-weight_pos = (1 / pos) * (t / 2.0)
+#weight_neg = (1 / neg) * (t / 2.0)
+#weight_pos = (1 / pos) * (t / 2.0)
 
-weights = {0: weight_neg, 1: weight_pos}; print("Weights:", weights)
+#weights = {0: weight_neg, 1: weight_pos}; print("Weights:", weights)
 
 # training
-history = model.fit(X_train, y_train, epochs=20, batch_size=1, validation_data=(X_val, y_val), class_weight=weights, verbose=1, callbacks=[cb])
+history = model.fit(X_train, y_train, epochs=20, batch_size=1, validation_data=(X_val, y_val), verbose=1, callbacks=[cb]) #, class_weight=weights)
 
 plt.plot(history.history['loss'])
 plt.plot(history.history['accuracy'])
@@ -189,7 +196,7 @@ plt.show()
 
 # make prediction
 y_pred = model.predict(X_test)
-y_pred = np.where(y_pred > 0.5325, 1, 0) # magic number = 0.026; with weights = ~0.5325
+y_pred = np.where(y_pred > 0.9, 1, 0) # magic number = 0.026; with weights = ~0.5325
 y_pred = pd.DataFrame(y_pred, columns=list(df[df.columns[-1:]]))
 
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, accuracy_score, classification_report, confusion_matrix
