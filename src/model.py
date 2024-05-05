@@ -9,13 +9,20 @@ import tensorflow as tf
 import keras_tuner as kt
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, accuracy_score, classification_report, confusion_matrix
 
-
 class FloodPrediction:
     '''This class creates an LSTM model that predicts flood events based on \
     monthly rainfall data'''
 
     def __init__(self, path="../data/", data_file="chennai-monthly-rains.csv", target_file="chennai-monthly-manual-flood.csv"):
-        '''Object initializer.'''
+        '''Object initializer.
+        
+        Args:
+            path* - a string location to look for files
+            data_file* - a string data file name
+            target_file* - a string target file name to compare with predictions
+        
+        *Optional if using default dataset files
+        '''
 
 
         self._model = tf.keras.Sequential()
@@ -73,7 +80,22 @@ class FloodPrediction:
                   target_column_name='months_flood',
                   drop_data_columns=["Year", "Total"],
                   drop_target_columns=["year"]):
-        '''This method loads training data and supervised learning targets.'''
+        '''This method loads training data and supervised learning targets.
+        
+        Args:
+            data - a string data file name
+            target - a string target data file name
+            data_index* - a string column name used to join the data file (must have unique values for all rows)
+            target_index* - a string column name used to  join the target file (must have unique values for all rows)
+            collapse_data_columns* - a list containing column name strings in the data file to be collapsed (concatenated) into one column
+            collapse_target_columns* - a list containing column name strings in the target file to be collapsed (concatenated) into one column
+            data_column_name* - a string for the new column name for data entries
+            target_column_name* - a string for the new column name for target entries
+            drop_data_columns* - a list containing column name strings to drop from the data file
+            drop_target_columns* - a list containing column name strings to drop from the target file
+        
+        *Optional if using the default dataset files
+        '''
     
         # read data
         df_rain = pd.read_csv(self.path + data)
@@ -118,7 +140,12 @@ class FloodPrediction:
         self._X = pd.DataFrame(X_scaled, columns=list(self._X.columns))
 
     def apply_over_under_sampling(self, smote_sampling_strategy=0.1, smote_k_neighbors=2):
-        '''This method applies oversampling (SMOTE) and undersampling (RandomUnderSampler) to both data and targets.'''
+        '''This method applies oversampling (SMOTE) and undersampling (RandomUnderSampler) to both data and targets.
+        
+        Args:
+            smote_sampling_strategy - same as imblearn.over_sampling.SMOTE(sampling_strategy) [default = 0.1]
+            smote_k_neighbors - same as imblearn.over_sampling.SMOTE(k_neighbors) [default = 2]
+        '''
 
         oversample = SMOTE(sampling_strategy=smote_sampling_strategy, k_neighbors=smote_k_neighbors)
         understample = RandomUnderSampler()
@@ -126,12 +153,21 @@ class FloodPrediction:
         self._X, self._y = oversample.fit_resample(self._X, self._y)
         self._X, self._y = understample.fit_resample(self._X, self._y)
 
-    def convert_to_supervised(self, lag=1,
+    def convert_to_supervised(self,
+                              lag=1,
                               forecast=1,
                               lag_column_pattern='var%d(t-%d)',
                               original_column_pattern='var%d(t)',
                               forecast_column_pattern='var%d(t+%d)'):
-        '''This method converts the training data to a format for supervised learning.'''
+        '''This method converts the training data to a format for supervised learning.
+        
+        Args:
+            lag - how many lagged (historic) values to present for each entry [default = 1]
+            forecast - how many future values to bring back for each entry [default = 1]
+            lag_column_pattern - the regex pattern for creating the lag column name [default = 'var%d(t-%d)']
+            original_column_pattern - the regex pattern for creating the original column name [default = 'var%d(t)']
+            forecast_column_pattern - the regex pattern for creating the forecast column name [default = 'var%d(t+%d)']
+        '''
 
         # Adapted from: J. Brownlee, “How to Convert a Time Series to a Supervised Learning Problem in Python,” Machine Learning Mastery, May 07, 2017. https://machinelearningmastery.com/convert-time-series-supervised-learning-problem-python/
         cols, names = list(), list()
@@ -149,7 +185,11 @@ class FloodPrediction:
         self._X.dropna(inplace=True)
 
     def convert_shape_to_3d(self, sequence=20):
-        '''This method converts input data shape from (n,n) to (n,n,n).'''
+        '''This method converts input data shape from (n,n) to (n,n,n).
+        
+        Args:
+            sequence - the number of rows to use at once [defalt = 20]
+        '''
 
         # Adapted from: S. S. Bhakta, “Multivariate Time Series Forecasting with LSTMs in Keras,” GeeksforGeeks, Feb. 17, 2024. https://www.geeksforgeeks.org/multivariate-time-series-forecasting-with-lstms-in-keras/ (accessed May 02, 2024).
         dfX = []
@@ -161,17 +201,28 @@ class FloodPrediction:
         self._X, self._y = np.array(dfX), np.array(dfY)
 
     def train_test_split(self, test_size=0.2, random_state=42):
-        '''This method performs holdout data splitting to create test data.'''
+        '''This method performs holdout data splitting to create test data.
+        
+        Args:
+            test_size - a float between 0-1 representing the size of the test split as a percentage of the whole [default = 0.2]
+            random_state - an integer used as a seed value for random splitting [default = 42]
+        '''
 
         self._X_train, self._X_test, self._y_train, self._y_test = train_test_split(self._X, self._y, test_size=test_size, random_state=random_state)
 
     def train_validation_split(self, test_size=0.1, random_state=42):
-        '''This method performs holdout data splitting to create validation data.'''
+        '''This method performs holdout data splitting to create validation data.
+        
+        Args:
+            test_size - a float between 0-1 representing the size of the test split as a percentage of the whole [default = 0.1]
+            random_state - an integer used as a seed value for random splitting [default = 42]
+        '''
 
         self._X_train, self._X_val, self._y_train, self._y_val = train_test_split(self._X_train, self._y_train, test_size=test_size, random_state=random_state)
 
     def build_model(self,
-                    hp, hp_tune_min_units=32,
+                    hp,
+                    hp_tune_min_units=32,
                     hp_tune_max_units=512,
                     hp_tune_units_step=32,
                     hp_tune_lrs=[1e-2, 1e-3, 1e-4],
@@ -188,7 +239,21 @@ class FloodPrediction:
                     dropout=0.2,
                     activation='sigmoid',
                     loss='BinaryCrossentropy'):
-        '''This method builds and compiles a new LSTM model.'''
+        '''This method builds and compiles a new LSTM model.
+        
+        Args:
+            hp - used internally by the hyperparameter search
+            hp_tune_min_units - an integer representing the smallest number of neurons in the LSTM layers [default = 32]
+            hp_tune_max_units - an integer representing the maximum number of neurons in the LSTM layers [default = 512]
+            hp_tune_units_step - an integer representing how much to add between values when tuning the hyperparameters [default = 32]
+            hp_tune_lrs - a list of floats which can be selected as the learning rate [default = [1e-2, 1e-3, 1e-4] ]
+            metrics - a list of tf.keras.metrics that will be shown while compiling/training the model [default eg. [tf.keras.metrics.BinaryAccuracy(name='accuracy')]; full list snipped but visible in output]
+            dropout - a float representing how much data to randomly drop to prevent overfitting [default = 0.2]
+            activation - a string for the type of activation used in the last layer [default = 'sigmoid']
+            loss - a string for the type of loss function to use [default = 'BinaryCrossentropy']
+
+        Returns:
+            a built tf.keras.Sequential() object'''
 
         # hyper parameter tuning
         hp_units = hp.Int('units', min_value=hp_tune_min_units, max_value=hp_tune_max_units, step=hp_tune_units_step)
@@ -224,7 +289,16 @@ class FloodPrediction:
                    search_epochs=50,
                    callbacks=[tf.keras.callbacks.EarlyStopping(monitor='val_prc', verbose=1, patience=3, mode='max', restore_best_weights=True)],
                    num_trials=1):
-        '''This method tunes the hyperparameters of the model.'''
+        '''This method tunes the hyperparameters of the model.
+        
+        Args:
+            objective - a keras_tuner.Objective() object [default = kt.Objective('prc', direction='max')]
+            tuner_max_epochs - an integer for the number of epochs used by the keras_tuner.Hyperband() tuner object [default = 10]
+            factor - an integer for the factor used by the keras_tuner.Hyperband() object [default = 3]
+            seach_epochs - an integer for the number of epochs used while searching hyperparameters [default = 50]
+            callbacks - a list of callback objects to pass while searching [default = [tf.keras.callbacks.EarlyStopping(monitor='val_prc', verbose=1, patience=3, mode='max', restore_best_weights=True)] ]
+            num_trials - an integer used while getting the best hyperperameter tune [default = 1]
+        '''
 
         tuner = kt.Hyperband(self.build_model, objective=objective, max_epochs=tuner_max_epochs, factor=factor)
         tuner.search(self._X_train, self._y_train, epochs=search_epochs, callbacks=callbacks)
@@ -240,7 +314,14 @@ class FloodPrediction:
                   validation_data=None,
                   verbose=1,
                   callbacks=[tf.keras.callbacks.EarlyStopping(monitor='val_prc', verbose=1, patience=3, mode='max', restore_best_weights=True)]):
-        '''This method trains the model.'''
+        '''This method trains the model.
+        
+        Args:
+            epochs - an integer for the number of epochs to use while fitting the model [default = 20]
+            batch_size - an integer for the size of each fitting batch [default = 1]
+            verbose - an integer for the verbose setting for fitting the model [default = 1]
+            callbacks - a list of callback objects to pass while fitting the model [default = [tf.keras.callbacks.EarlyStopping(monitor='val_prc', verbose=1, patience=3, mode='max', restore_best_weights=True)] ]
+        '''
 
         if validation_data == None:
             validation_data = (self._X_val, self._y_val)
@@ -249,7 +330,14 @@ class FloodPrediction:
 
 
     def predict(self, data=None, threshold=0.9):
-        '''This method makes a prediction using the model.'''
+        '''This method makes a prediction using the model.
+        
+        Args:
+            data - the data to make a prediction from. If None, method will use the test data split [default = None]
+            threshold - a float that results are classified as 1 if greater than this value and 0 if less than this value [default = 0.9]
+        
+        Returns:
+            a pandas DataFrame object containing binary classifications.'''
 
         if data == None:
             data = self._X_test
@@ -266,11 +354,20 @@ class FloodPrediction:
         self._model.evaluate(self._X_test, self._y_test)
 
     def get_dataframe(self):
-        '''Accessor returns the raw pandas dataframe used for training the model.'''
+        '''Accessor returns the raw pandas dataframe used for training the model.
+        
+        Returns:
+            a pandas DataFrame
+        '''
+
         return self._df
 
     def get_history(self):
-        '''Accessor returns the tf.keras.callbacks.History object.'''
+        '''Accessor returns the tf.keras.callbacks.History object.
+        
+        Returns:
+            a tensorflow.keras.History object.'''
+
         return self._history
 
     def get_data(self):
