@@ -372,14 +372,14 @@ class FloodPrediction:
             project_name - a string for the name of the directory to save trail models [default = 'hp_tune_save'
             seach_epochs - an integer for the number of epochs used while searching hyperparameters [default = 50]
             callbacks - a list of callback objects to pass while searching [default = [tf.keras.callbacks.EarlyStopping(monitor='val_prc', verbose=1, patience=3, mode='max', restore_best_weights=True)] ]
-            num_trials - an integer used while getting the best hyperperameter tune [default = 1]
+            num_trials - an integer used for how many trials to get while getting the best hyperperameter tune [default = 1]
         '''
         
         tuner = kt.Hyperband(self.build_model, objective=objective, max_epochs=tuner_max_epochs, factor=factor, directory=directory, project_name=project_name)
         tuner.search(self._X_train, self._y_train, epochs=search_epochs, callbacks=callbacks)
         best_hp = tuner.get_best_hyperparameters(num_trials=num_trials)[0]
         
-        print(best_hp.get('units'), best_hp.get('learning_rate'))
+        print("Number of units:", best_hp.get('units'), "Learning rate:", best_hp.get('learning_rate'))
         
         self._model = tuner.hypermodel.build(best_hp)
 
