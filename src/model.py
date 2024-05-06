@@ -24,7 +24,6 @@ class FloodPrediction:
         *Optional if using default dataset files
         '''
 
-
         self._model = tf.keras.Sequential()
         self._history = tf.keras.callbacks.History()
 
@@ -37,6 +36,9 @@ class FloodPrediction:
         self._y_train = pd.DataFrame()
         self._y_test = pd.DataFrame()
         self._y_val = pd.DataFrame()
+        self._num_pos = int
+        self._num_neg = int
+        self._target_count = int
         self.path = path
         self.lag = int
         self.fore = int
@@ -68,6 +70,9 @@ class FloodPrediction:
 
         # train-validation split
         self.train_validation_split()
+
+        # check data balance
+        self.check_target_balance()
 
     def load_data(self,
                   data,
@@ -220,6 +225,22 @@ class FloodPrediction:
 
         self._X_train, self._X_val, self._y_train, self._y_val = train_test_split(self._X_train, self._y_train, test_size=test_size, random_state=random_state)
 
+    def check_target_balance(self, target_column='months_flood'):
+        '''This method displays and sets the percentage of true and false targets.
+        
+        Args:
+            target_column - a string for the column name to check [default = 'months_flood']
+        '''
+
+        # Adapted from: “Classification on imbalanced data | TensorFlow Core,” TensorFlow. https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
+        neg, pos = np.bincount(self.get_dataframe()[target_column])
+        t = neg + pos
+        print(f"Total: %d; positive: %d (%.2f%% of total)" % (t, pos, (100*pos/t)))
+        
+        self._num_pos = pos
+        self._num_neg = neg
+        self._target_count = t
+
     def build_model(self,
                     hp,
                     hp_tune_min_units=32,
@@ -271,8 +292,7 @@ class FloodPrediction:
         
         # drop data to control overfitting
         model.add(tf.keras.layers.Dropout(dropout))
-        
-        model.add(tf.keras.layers.Dense(units=1, activation=activation, bias_initializer=tf.keras.initializers.Constant(np.log([pos/neg]))))
+        model.add(tf.keras.layers.Dense(units=1, activation=activation, bias_initializer=tf.keras.initializers.Constant(np.log([self._num_pos/self._num_neg]))))
         model.compile(loss=loss, optimizer=tf.keras.optimizers.Adam(learning_rate=hp_learning_rate), metrics=metrics)
         model.summary()
 
@@ -418,12 +438,6 @@ if __name__ == "__main__":
     #df_rain.plot(x="Year")
     #df_flood.plot(x="year")
     #plt.show()
-
-    # check data balance
-    # Adapted from: “Classification on imbalanced data | TensorFlow Core,” TensorFlow. https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
-    neg, pos = np.bincount(new_model.get_dataframe()['months_flood'])
-    t = neg + pos
-    print(f"Total: %d; positive: %d (%.2f%% of total)" % (t, pos, (100*pos/t)))
 
     # TODO: convert data to log-space?
 
