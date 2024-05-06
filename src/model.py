@@ -6,6 +6,7 @@ from imblearn.over_sampling import SMOTE
 from imblearn.under_sampling import RandomUnderSampler
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
+from tensorflow.keras.saving import load_model
 import keras_tuner as kt
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, accuracy_score, classification_report, confusion_matrix
 
@@ -13,13 +14,18 @@ class FloodPrediction:
     '''This class creates an LSTM model that predicts flood events based on \
     monthly rainfall data'''
 
-    def __init__(self, path="../data/", data_file="chennai-monthly-rains.csv", target_file="chennai-monthly-manual-flood.csv"):
+    def __init__(self,
+                 path="../data/",
+                 data_file="chennai-monthly-rains.csv",
+                 target_file="chennai-monthly-manual-flood.csv",
+                 ignore_save=False):
         '''Object initializer.
         
         Args:
             path* - a string location to look for files
             data_file* - a string data file name
             target_file* - a string target file name to compare with predictions
+            ignore_save - a Boolean for whether the model should ignore a previously saved version [default = false]
         
         *Optional if using default dataset files
         '''
@@ -43,6 +49,9 @@ class FloodPrediction:
         self.lag = int
         self.fore = int
         self.sequence = int
+        self.from_save = False
+        self.save_location = "../build/model.keras"
+        self.ignore_save = ignore_save
 
         # read files and format data
         self.load_data(data_file, target_file)
@@ -73,6 +82,11 @@ class FloodPrediction:
 
         # check data balance
         self.check_target_balance()
+        
+        # load save if it exists and user wants to load from file
+        if not self.ignore_save:
+            self.load_save()
+        
 
     def load_data(self,
                   data,
@@ -114,7 +128,6 @@ class FloodPrediction:
             df_rain = df_rain[(df_rain[data_index] <= df_flood[target_index].max())]
 
         # merge datasets
-        #   TODO: remove second 'year' column added by merging
         self._df = pd.merge(df_rain, df_flood, left_on=data_index, right_on=target_index)
 
         # concat columns
@@ -241,6 +254,44 @@ class FloodPrediction:
         self._num_neg = neg
         self._target_count = t
 
+    def save(self, filepath="../build/model.keras", overwrite=False):
+        '''This method saves the entire model (incl. weights) to file. 
+        
+        Args:
+            filepath - a string for the filepath to save the model [default = "../build/model.keras"]
+            overwrite - a Boolean for whether to overwrite the existing save file [default = False]
+        '''
+
+        try:
+            print("Saving model...")
+            self._model.save(filepath, overwrite=overwrite)
+            self.save_location = filepath
+        except Exception as e:
+            print("Saving failed: " + e)
+        else:
+            print("Model saved successfully!")
+            
+
+    def load_save(self, filepath=None):
+        '''This method attempts to load a save file of the model.
+        
+        Args:
+            filepath - a string for the filepath to look for the model. If None, uses default location. [default = None]
+        '''
+
+        if filepath == None:
+            filepath = self.save_location
+
+        try:
+            print("Loading model...")
+            self._model = load_model(filepath)
+        except Exception as e:
+            print("Failed to load file from save location. File is moved or deleted.")
+            print(e)
+        else:
+            self.from_save = True
+            print("Model successfully loaded from file!")
+
     def build_model(self,
                     hp,
                     hp_tune_min_units=32,
@@ -306,6 +357,8 @@ class FloodPrediction:
                    objective=kt.Objective('prc', direction='max'),
                    tuner_max_epochs=10,
                    factor=3,
+                   directory='../build/',
+                   project_name='hp_tune_save',
                    search_epochs=50,
                    callbacks=[tf.keras.callbacks.EarlyStopping(monitor='val_prc', verbose=1, patience=3, mode='max', restore_best_weights=True)],
                    num_trials=1):
@@ -315,12 +368,14 @@ class FloodPrediction:
             objective - a keras_tuner.Objective() object [default = kt.Objective('prc', direction='max')]
             tuner_max_epochs - an integer for the number of epochs used by the keras_tuner.Hyperband() tuner object [default = 10]
             factor - an integer for the factor used by the keras_tuner.Hyperband() object [default = 3]
+            directory - a string for the directory where to place the save file directory [default = '../build/']
+            project_name - a string for the name of the directory to save trail models [default = 'hp_tune_save'
             seach_epochs - an integer for the number of epochs used while searching hyperparameters [default = 50]
             callbacks - a list of callback objects to pass while searching [default = [tf.keras.callbacks.EarlyStopping(monitor='val_prc', verbose=1, patience=3, mode='max', restore_best_weights=True)] ]
             num_trials - an integer used while getting the best hyperperameter tune [default = 1]
         '''
-
-        tuner = kt.Hyperband(self.build_model, objective=objective, max_epochs=tuner_max_epochs, factor=factor)
+        
+        tuner = kt.Hyperband(self.build_model, objective=objective, max_epochs=tuner_max_epochs, factor=factor, directory=directory, project_name=project_name)
         tuner.search(self._X_train, self._y_train, epochs=search_epochs, callbacks=callbacks)
         best_hp = tuner.get_best_hyperparameters(num_trials=num_trials)[0]
         
@@ -369,9 +424,12 @@ class FloodPrediction:
         return y_pred
  
     def evaluate(self):
-        '''This  method makes an evaluation report on a prediction.'''
+        '''This  method makes an evaluation report on a prediction.
+        
+        Returns:
+            Same as calling tensorflow.keras.Model.evaluate()'''
 
-        self._model.evaluate(self._X_test, self._y_test)
+        return self._model.evaluate(self._X_test, self._y_test)
 
     def get_dataframe(self):
         '''Accessor returns the raw pandas dataframe used for training the model.
@@ -462,6 +520,7 @@ if __name__ == "__main__":
     print("X_val:", new_model.get_data_validation_split().shape, "y_val:", new_model.get_target_validation_split().shape)
 
     # hyperparameter search
+    #if not new_model.from_save:
     new_model.tune_model()
 
     # create class weights
@@ -472,15 +531,17 @@ if __name__ == "__main__":
     #weights = {0: weight_neg, 1: weight_pos}; print("Weights:", weights)
 
     # training
+    #if not new_model.from_save:
     new_model.fit_model()
 
-    plt.plot(new_model.get_history().history['loss'])
-    plt.plot(new_model.get_history().history['accuracy'])
-    plt.ylabel("loss / accuracy")
-    plt.xlabel("Epoch")
-    plt.legend(['loss', 'accuracy'])
-    plt.title("Training")
-    plt.show()
+    if not new_model.from_save:
+        plt.plot(new_model.get_history().history['loss'])
+        plt.plot(new_model.get_history().history['accuracy'])
+        plt.ylabel("loss / accuracy")
+        plt.xlabel("Epoch")
+        plt.legend(['loss', 'accuracy'])
+        plt.title("Training")
+        plt.show()
 
     # make prediction
     y_pred = new_model.predict()
@@ -498,3 +559,7 @@ if __name__ == "__main__":
     print("Accuracy:", accuracy_score(new_model.get_target_test_split(), y_pred))
     print(classification_report(new_model.get_target_test_split(), y_pred))
     print(confusion_matrix(new_model.get_target_test_split(), y_pred))
+    
+    # save good model
+    if accuracy_score(new_model.get_target_test_split(), y_pred) > .9:
+        new_model.save(overwrite=True)
