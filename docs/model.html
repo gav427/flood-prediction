@@ -8,7 +8,7 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>model</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/media/gcm/SanDisk32gb/Swinburne/S1_2024/Technology%20Innovation%20Project/flood-prediction/src/model.py">/media/gcm/SanDisk32gb/Swinburne/S1_2024/Technology Innovation Project/flood-prediction/src/model.py</a></font></td></tr></table>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:e%3A%5Cswinburne%5Cs1_2024%5Ctechnology%20innovation%20project%5Cflood-prediction%5Csrc%5Cmodel.py">e:\swinburne\s1_2024\technology innovation project\flood-prediction\src\model.py</a></font></td></tr></table>
     <p></p>
 <p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
@@ -44,17 +44,18 @@
 <font color="#000000" face="helvetica, arial"><a name="FloodPrediction">class <strong>FloodPrediction</strong></a>(<a href="builtins.html#object">builtins.object</a>)</font></td></tr>
     
 <tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
-<td colspan=2><tt><a href="#FloodPrediction">FloodPrediction</a>(path='../data/',&nbsp;data_file='chennai-monthly-rains.csv',&nbsp;target_file='chennai-monthly-manual-flood.csv')<br>
+<td colspan=2><tt><a href="#FloodPrediction">FloodPrediction</a>(path='../data/',&nbsp;data_file='chennai-monthly-rains.csv',&nbsp;target_file='chennai-monthly-manual-flood.csv',&nbsp;ignore_save=False)<br>
 &nbsp;<br>
 This&nbsp;class&nbsp;creates&nbsp;an&nbsp;LSTM&nbsp;model&nbsp;that&nbsp;predicts&nbsp;flood&nbsp;events&nbsp;based&nbsp;on&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;monthly&nbsp;rainfall&nbsp;data<br>&nbsp;</tt></td></tr>
 <tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
-<dl><dt><a name="FloodPrediction-__init__"><strong>__init__</strong></a>(self, path='../data/', data_file='chennai-monthly-rains.csv', target_file='chennai-monthly-manual-flood.csv')</dt><dd><tt>Object&nbsp;initializer.<br>
+<dl><dt><a name="FloodPrediction-__init__"><strong>__init__</strong></a>(self, path='../data/', data_file='chennai-monthly-rains.csv', target_file='chennai-monthly-manual-flood.csv', ignore_save=False)</dt><dd><tt>Object&nbsp;initializer.<br>
 &nbsp;<br>
 Args:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;path*&nbsp;-&nbsp;a&nbsp;string&nbsp;location&nbsp;to&nbsp;look&nbsp;for&nbsp;files<br>
 &nbsp;&nbsp;&nbsp;&nbsp;data_file*&nbsp;-&nbsp;a&nbsp;string&nbsp;data&nbsp;file&nbsp;name<br>
 &nbsp;&nbsp;&nbsp;&nbsp;target_file*&nbsp;-&nbsp;a&nbsp;string&nbsp;target&nbsp;file&nbsp;name&nbsp;to&nbsp;compare&nbsp;with&nbsp;predictions<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ignore_save&nbsp;-&nbsp;a&nbsp;Boolean&nbsp;for&nbsp;whether&nbsp;the&nbsp;model&nbsp;should&nbsp;ignore&nbsp;a&nbsp;previously&nbsp;saved&nbsp;version&nbsp;[default&nbsp;=&nbsp;false]<br>
 &nbsp;<br>
 *Optional&nbsp;if&nbsp;using&nbsp;default&nbsp;dataset&nbsp;files</tt></dd></dl>
 
@@ -84,6 +85,11 @@ Args:<br>
 Returns:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;built&nbsp;tf.keras.Sequential()&nbsp;<a href="builtins.html#object">object</a></tt></dd></dl>
 
+<dl><dt><a name="FloodPrediction-check_target_balance"><strong>check_target_balance</strong></a>(self, target_column='months_flood')</dt><dd><tt>This&nbsp;method&nbsp;displays&nbsp;and&nbsp;sets&nbsp;the&nbsp;percentage&nbsp;of&nbsp;true&nbsp;and&nbsp;false&nbsp;targets.<br>
+&nbsp;<br>
+Args:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;target_column&nbsp;-&nbsp;a&nbsp;string&nbsp;for&nbsp;the&nbsp;column&nbsp;name&nbsp;to&nbsp;check&nbsp;[default&nbsp;=&nbsp;'months_flood']</tt></dd></dl>
+
 <dl><dt><a name="FloodPrediction-convert_shape_to_3d"><strong>convert_shape_to_3d</strong></a>(self, sequence=20)</dt><dd><tt>This&nbsp;method&nbsp;converts&nbsp;input&nbsp;data&nbsp;shape&nbsp;from&nbsp;(n,n)&nbsp;to&nbsp;(n,n,n).<br>
 &nbsp;<br>
 Args:<br>
@@ -98,9 +104,12 @@ Args:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;original_column_pattern&nbsp;-&nbsp;the&nbsp;regex&nbsp;pattern&nbsp;for&nbsp;creating&nbsp;the&nbsp;original&nbsp;column&nbsp;name&nbsp;[default&nbsp;=&nbsp;'var%d(t)']<br>
 &nbsp;&nbsp;&nbsp;&nbsp;forecast_column_pattern&nbsp;-&nbsp;the&nbsp;regex&nbsp;pattern&nbsp;for&nbsp;creating&nbsp;the&nbsp;forecast&nbsp;column&nbsp;name&nbsp;[default&nbsp;=&nbsp;'var%d(t+%d)']</tt></dd></dl>
 
-<dl><dt><a name="FloodPrediction-evaluate"><strong>evaluate</strong></a>(self)</dt><dd><tt>This&nbsp;&nbsp;method&nbsp;makes&nbsp;an&nbsp;evaluation&nbsp;report&nbsp;on&nbsp;a&nbsp;prediction.</tt></dd></dl>
+<dl><dt><a name="FloodPrediction-evaluate"><strong>evaluate</strong></a>(self)</dt><dd><tt>This&nbsp;&nbsp;method&nbsp;makes&nbsp;an&nbsp;evaluation&nbsp;report&nbsp;on&nbsp;a&nbsp;prediction.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Same&nbsp;as&nbsp;calling&nbsp;tensorflow.keras.Model.<a href="#FloodPrediction-evaluate">evaluate</a>()</tt></dd></dl>
 
-<dl><dt><a name="FloodPrediction-fit_model"><strong>fit_model</strong></a>(self, epochs=20, batch_size=1, validation_data=None, verbose=1, callbacks=[&lt;keras.src.callbacks.early_stopping.EarlyStopping object at 0x74b177a1a530&gt;])</dt><dd><tt>This&nbsp;method&nbsp;trains&nbsp;the&nbsp;model.<br>
+<dl><dt><a name="FloodPrediction-fit_model"><strong>fit_model</strong></a>(self, epochs=20, batch_size=1, validation_data=None, verbose=1, callbacks=[&lt;keras.src.callbacks.early_stopping.EarlyStopping object at 0x000001CEC6934490&gt;])</dt><dd><tt>This&nbsp;method&nbsp;trains&nbsp;the&nbsp;model.<br>
 &nbsp;<br>
 Args:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;epochs&nbsp;-&nbsp;an&nbsp;integer&nbsp;for&nbsp;the&nbsp;number&nbsp;of&nbsp;epochs&nbsp;to&nbsp;use&nbsp;while&nbsp;fitting&nbsp;the&nbsp;model&nbsp;[default&nbsp;=&nbsp;20]<br>
@@ -150,6 +159,11 @@ Args:<br>
 &nbsp;<br>
 *Optional&nbsp;if&nbsp;using&nbsp;the&nbsp;default&nbsp;dataset&nbsp;files</tt></dd></dl>
 
+<dl><dt><a name="FloodPrediction-load_save"><strong>load_save</strong></a>(self, filepath=None)</dt><dd><tt>This&nbsp;method&nbsp;attempts&nbsp;to&nbsp;load&nbsp;a&nbsp;save&nbsp;file&nbsp;of&nbsp;the&nbsp;model.<br>
+&nbsp;<br>
+Args:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;filepath&nbsp;-&nbsp;a&nbsp;string&nbsp;for&nbsp;the&nbsp;filepath&nbsp;to&nbsp;look&nbsp;for&nbsp;the&nbsp;model.&nbsp;If&nbsp;None,&nbsp;uses&nbsp;default&nbsp;location.&nbsp;[default&nbsp;=&nbsp;None]</tt></dd></dl>
+
 <dl><dt><a name="FloodPrediction-make_data_target"><strong>make_data_target</strong></a>(self)</dt><dd><tt>This&nbsp;method&nbsp;splits&nbsp;the&nbsp;dataframe&nbsp;into&nbsp;data&nbsp;(X)&nbsp;and&nbsp;supervised&nbsp;learning&nbsp;targets&nbsp;(y).</tt></dd></dl>
 
 <dl><dt><a name="FloodPrediction-predict"><strong>predict</strong></a>(self, data=None, threshold=0.9)</dt><dd><tt>This&nbsp;method&nbsp;makes&nbsp;a&nbsp;prediction&nbsp;using&nbsp;the&nbsp;model.<br>
@@ -160,6 +174,12 @@ Args:<br>
 &nbsp;<br>
 Returns:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;a&nbsp;pandas&nbsp;DataFrame&nbsp;<a href="builtins.html#object">object</a>&nbsp;containing&nbsp;binary&nbsp;classifications.</tt></dd></dl>
+
+<dl><dt><a name="FloodPrediction-save"><strong>save</strong></a>(self, filepath='../build/model.keras', overwrite=False)</dt><dd><tt>This&nbsp;method&nbsp;saves&nbsp;the&nbsp;entire&nbsp;model&nbsp;(incl.&nbsp;weights)&nbsp;to&nbsp;file.&nbsp;<br>
+&nbsp;<br>
+Args:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;filepath&nbsp;-&nbsp;a&nbsp;string&nbsp;for&nbsp;the&nbsp;filepath&nbsp;to&nbsp;save&nbsp;the&nbsp;model&nbsp;[default&nbsp;=&nbsp;"../build/model.keras"]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;overwrite&nbsp;-&nbsp;a&nbsp;Boolean&nbsp;for&nbsp;whether&nbsp;to&nbsp;overwrite&nbsp;the&nbsp;existing&nbsp;save&nbsp;file&nbsp;[default&nbsp;=&nbsp;False]</tt></dd></dl>
 
 <dl><dt><a name="FloodPrediction-train_test_split"><strong>train_test_split</strong></a>(self, test_size=0.2, random_state=42)</dt><dd><tt>This&nbsp;method&nbsp;performs&nbsp;holdout&nbsp;data&nbsp;splitting&nbsp;to&nbsp;create&nbsp;test&nbsp;data.<br>
 &nbsp;<br>
@@ -173,15 +193,17 @@ Args:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;test_size&nbsp;-&nbsp;a&nbsp;float&nbsp;between&nbsp;0-1&nbsp;representing&nbsp;the&nbsp;size&nbsp;of&nbsp;the&nbsp;test&nbsp;split&nbsp;as&nbsp;a&nbsp;percentage&nbsp;of&nbsp;the&nbsp;whole&nbsp;[default&nbsp;=&nbsp;0.1]<br>
 &nbsp;&nbsp;&nbsp;&nbsp;random_state&nbsp;-&nbsp;an&nbsp;integer&nbsp;used&nbsp;as&nbsp;a&nbsp;seed&nbsp;value&nbsp;for&nbsp;random&nbsp;splitting&nbsp;[default&nbsp;=&nbsp;42]</tt></dd></dl>
 
-<dl><dt><a name="FloodPrediction-tune_model"><strong>tune_model</strong></a>(self, objective=&lt;keras_tuner.src.engine.objective.Objective object at 0x74b177a1a290&gt;, tuner_max_epochs=10, factor=3, search_epochs=50, callbacks=[&lt;keras.src.callbacks.early_stopping.EarlyStopping object at 0x74b177a1a4d0&gt;], num_trials=1)</dt><dd><tt>This&nbsp;method&nbsp;tunes&nbsp;the&nbsp;hyperparameters&nbsp;of&nbsp;the&nbsp;model.<br>
+<dl><dt><a name="FloodPrediction-tune_model"><strong>tune_model</strong></a>(self, objective=&lt;keras_tuner.src.engine.objective.Objective object at 0x000001CEC69341F0&gt;, tuner_max_epochs=10, factor=3, directory='../build/', project_name='hp_tune_save', search_epochs=50, callbacks=[&lt;keras.src.callbacks.early_stopping.EarlyStopping object at 0x000001CEC6934430&gt;], num_trials=1)</dt><dd><tt>This&nbsp;method&nbsp;tunes&nbsp;the&nbsp;hyperparameters&nbsp;of&nbsp;the&nbsp;model.<br>
 &nbsp;<br>
 Args:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;objective&nbsp;-&nbsp;a&nbsp;keras_tuner.Objective()&nbsp;<a href="builtins.html#object">object</a>&nbsp;[default&nbsp;=&nbsp;kt.Objective('prc',&nbsp;direction='max')]<br>
 &nbsp;&nbsp;&nbsp;&nbsp;tuner_max_epochs&nbsp;-&nbsp;an&nbsp;integer&nbsp;for&nbsp;the&nbsp;number&nbsp;of&nbsp;epochs&nbsp;used&nbsp;by&nbsp;the&nbsp;keras_tuner.Hyperband()&nbsp;tuner&nbsp;<a href="builtins.html#object">object</a>&nbsp;[default&nbsp;=&nbsp;10]<br>
 &nbsp;&nbsp;&nbsp;&nbsp;factor&nbsp;-&nbsp;an&nbsp;integer&nbsp;for&nbsp;the&nbsp;factor&nbsp;used&nbsp;by&nbsp;the&nbsp;keras_tuner.Hyperband()&nbsp;<a href="builtins.html#object">object</a>&nbsp;[default&nbsp;=&nbsp;3]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;directory&nbsp;-&nbsp;a&nbsp;string&nbsp;for&nbsp;the&nbsp;directory&nbsp;where&nbsp;to&nbsp;place&nbsp;the&nbsp;save&nbsp;file&nbsp;directory&nbsp;[default&nbsp;=&nbsp;'../build/']<br>
+&nbsp;&nbsp;&nbsp;&nbsp;project_name&nbsp;-&nbsp;a&nbsp;string&nbsp;for&nbsp;the&nbsp;name&nbsp;of&nbsp;the&nbsp;directory&nbsp;to&nbsp;save&nbsp;trail&nbsp;models&nbsp;[default&nbsp;=&nbsp;'hp_tune_save'<br>
 &nbsp;&nbsp;&nbsp;&nbsp;seach_epochs&nbsp;-&nbsp;an&nbsp;integer&nbsp;for&nbsp;the&nbsp;number&nbsp;of&nbsp;epochs&nbsp;used&nbsp;while&nbsp;searching&nbsp;hyperparameters&nbsp;[default&nbsp;=&nbsp;50]<br>
 &nbsp;&nbsp;&nbsp;&nbsp;callbacks&nbsp;-&nbsp;a&nbsp;list&nbsp;of&nbsp;callback&nbsp;objects&nbsp;to&nbsp;pass&nbsp;while&nbsp;searching&nbsp;[default&nbsp;=&nbsp;[tf.keras.callbacks.EarlyStopping(monitor='val_prc',&nbsp;verbose=1,&nbsp;patience=3,&nbsp;mode='max',&nbsp;restore_best_weights=True)]&nbsp;]<br>
-&nbsp;&nbsp;&nbsp;&nbsp;num_trials&nbsp;-&nbsp;an&nbsp;integer&nbsp;used&nbsp;while&nbsp;getting&nbsp;the&nbsp;best&nbsp;hyperperameter&nbsp;tune&nbsp;[default&nbsp;=&nbsp;1]</tt></dd></dl>
+&nbsp;&nbsp;&nbsp;&nbsp;num_trials&nbsp;-&nbsp;an&nbsp;integer&nbsp;used&nbsp;for&nbsp;how&nbsp;many&nbsp;trials&nbsp;to&nbsp;get&nbsp;while&nbsp;getting&nbsp;the&nbsp;best&nbsp;hyperperameter&nbsp;tune&nbsp;[default&nbsp;=&nbsp;1]</tt></dd></dl>
 
 <hr>
 Data descriptors defined here:<br>
