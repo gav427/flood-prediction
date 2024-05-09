@@ -202,11 +202,12 @@ class FloodPrediction:
         self._X.columns = names
         self._X.dropna(inplace=True)
 
-    def convert_shape_to_3d(self, sequence=20):
+    def convert_shape_to_3d(self, target_column='months_flood', sequence=20):
         '''This method converts input data shape from (n,n) to (n,n,n).
         
         Args:
-            sequence - the number of rows to use at once [defalt = 20]
+            target_column - a string for the name of the column containing target values [default = 'months_flood']
+            sequence - the number of rows to use at once [default = 20]
         '''
 
         # Adapted from: S. S. Bhakta, “Multivariate Time Series Forecasting with LSTMs in Keras,” GeeksforGeeks, Feb. 17, 2024. https://www.geeksforgeeks.org/multivariate-time-series-forecasting-with-lstms-in-keras/ (accessed May 02, 2024).
@@ -215,7 +216,7 @@ class FloodPrediction:
         for i in range(0, len(self._X) - sequence):
             data = [[self._X[col].iloc[i+j] for col in self._X.columns] for j in range(0, sequence)]
             dfX.append(data)
-            dfY.append(self._y[['months_flood']].iloc[i + sequence].values)
+            dfY.append(self._y[[target_column]].iloc[i + sequence].values)
         self._X, self._y = np.array(dfX), np.array(dfY)
 
     def train_test_split(self, test_size=0.2, random_state=42):
@@ -370,7 +371,7 @@ class FloodPrediction:
             factor - an integer for the factor used by the keras_tuner.Hyperband() object [default = 3]
             directory - a string for the directory where to place the save file directory [default = '../build/']
             project_name - a string for the name of the directory to save trail models [default = 'hp_tune_save'
-            seach_epochs - an integer for the number of epochs used while searching hyperparameters [default = 50]
+            search_epochs - an integer for the number of epochs used while searching hyperparameters [default = 50]
             callbacks - a list of callback objects to pass while searching [default = [tf.keras.callbacks.EarlyStopping(monitor='val_prc', verbose=1, patience=3, mode='max', restore_best_weights=True)] ]
             num_trials - an integer used for how many trials to get while getting the best hyperperameter tune [default = 1]
         '''
@@ -403,19 +404,32 @@ class FloodPrediction:
 
         self._history = self._model.fit(self._X_train, self._y_train, epochs=epochs, batch_size=batch_size, validation_data=validation_data, verbose=verbose, callbacks=callbacks)
 
-
-    def predict(self, data=None, threshold=0.9):
+    def predict(self, data=None, threshold=0.9, single_value_bias=100):
         '''This method makes a prediction using the model.
         
         Args:
-            data - the data to make a prediction from. If None, method will use the test data split [default = None]
+            data - the data [np.array() or float] to make a prediction from. If None, method will use the test data split. [default = None]
             threshold - a float that results are classified as 1 if greater than this value and 0 if less than this value [default = 0.9]
+            single_value_bias - an integer that biases the input to boost single value predictions [default = 100]
         
         Returns:
             a pandas DataFrame object containing binary classifications.'''
 
         if data == None:
             data = self._X_test
+            
+        if type(data) == float:
+            # normalise data between 0 and 1 relative to training data
+            if data < self._df.max()[0]:
+                data = data / self._df.max()[0]
+            else:
+                data = 9.99999998e-01
+            
+            # amplify loudness
+            data *= single_value_bias
+            
+            # reshape for LSTM input
+            data = np.array([[(data,0)]])
 
         y_pred = self._model.predict(data)
         y_pred = np.where(y_pred > threshold, 1, 0) # magic number = 0.026; with weights = ~0.5325
@@ -563,3 +577,13 @@ if __name__ == "__main__":
     # save good model
     if accuracy_score(new_model.get_target_test_split(), y_pred) > .9:
         new_model.save(overwrite=True)
+        
+    # single month prediction
+    y_pred_month = new_model.predict(data=10.0, threshold=0.5)
+    
+    print("Single month predictions:")
+    print("Flood unlikely:", y_pred_month)
+    
+    y_pred_month_flood = new_model.predict(data=950.0, threshold=0.5)
+    
+    print("Flood likely:", y_pred_month_flood)
