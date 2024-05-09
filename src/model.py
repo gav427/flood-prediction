@@ -413,7 +413,8 @@ class FloodPrediction:
             single_value_bias - an integer that biases the input to boost single value predictions [default = 100]
         
         Returns:
-            a pandas DataFrame object containing binary classifications.'''
+            a pandas DataFrame object containing binary classifications.
+            a pandas DataFrame object containing raw predictions.'''
 
         if data == None:
             data = self._X_test
@@ -432,10 +433,11 @@ class FloodPrediction:
             data = np.array([[(data,0)]])
 
         y_pred = self._model.predict(data)
+        y_pred_raw = pd.DataFrame(y_pred, columns=list(self._df[self._df.columns[-1:]]))
         y_pred = np.where(y_pred > threshold, 1, 0) # magic number = 0.026; with weights = ~0.5325
         y_pred = pd.DataFrame(y_pred, columns=list(self._df[self._df.columns[-1:]]))
         
-        return y_pred
+        return y_pred, y_pred_raw
  
     def evaluate(self):
         '''This  method makes an evaluation report on a prediction.
@@ -558,7 +560,7 @@ if __name__ == "__main__":
         plt.show()
 
     # make prediction
-    y_pred = new_model.predict()
+    y_pred, y_raw = new_model.predict()
 
     # evaluate prediction
     new_model.evaluate()
@@ -579,11 +581,11 @@ if __name__ == "__main__":
         new_model.save(overwrite=True)
         
     # single month prediction
-    y_pred_month = new_model.predict(data=10.0, threshold=0.5)
+    y_pred_month, y_month_raw = new_model.predict(data=10.0, threshold=0.5)
     
     print("Single month predictions:")
-    print("Flood unlikely:", y_pred_month)
+    print("Flood unlikely:", y_pred_month, "\n", y_month_raw)
     
-    y_pred_month_flood = new_model.predict(data=950.0, threshold=0.5)
+    y_pred_month_flood, y_month_flood_raw = new_model.predict(data=950.0, threshold=0.5)
     
-    print("Flood likely:", y_pred_month_flood)
+    print("Flood likely:", y_pred_month_flood, "\n", y_month_flood_raw)
