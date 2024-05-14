@@ -1,0 +1,16 @@
+[
+  {
+    "fullName": "Pratik Prakash",
+    "email": "pratikrakash@gmail.com",
+    "password": "1111",
+    "region": "Saidapet",
+    "isAdmin": true
+  },
+  {
+    "fullName": "Gavin Moore",
+    "email": "pratikprakash060@gmail.com",
+    "password": "2222",
+    "region": "Chennai Beach",
+    "isAdmin": false
+  }
+]
