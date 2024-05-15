@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rainfall Prediction</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Link to Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="#">Home</a></li>
+                <!-- <li><a href="#">Prediction</a></li> -->
+                <li><a href="login.html">Sign Out</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="content">
+        <h2>Rainfall Prediction for the Next 7 Days</h2>
+        <div class="chart-container">
+            <canvas id="rainfallChart"></canvas>
+        </div>
+    </div>
+    <button id="calculate-flood-prediction">Calculate Flood Prediction</button>
+    <div class="content">
+        <h2>Compose Email</h2>
+        <textarea id="email-content" rows="5" cols="50"></textarea>
+        <button onclick="sendEmail()">Send Email</button>
+    </div>
+    <footer>
+        <!-- Footer content -->
+    </footer>
+    <!-- Link to your prediction.js file -->
+    <script src="prediction.js"></script>
+</body>
+</html>
