@@ -119,13 +119,5 @@ footer {
 .red-card p {
     margin: 0;
 }
-.yellow-card {
-    background-color: yellow;
-    color: white;
-    padding: 20px;
-    margin-bottom: 10px;
-}
-.yellow-card p {
-    margin: 0;
-}
+
 
