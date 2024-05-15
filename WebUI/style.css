@@ -109,3 +109,23 @@ footer {
 .yellow-card h3 {
     color: yellow;
 }
+/* CSS styles to color the cards as red */
+.red-card {
+    background-color: red;
+    color: white;
+    padding: 20px;
+    margin-bottom: 10px;
+}
+.red-card p {
+    margin: 0;
+}
+.yellow-card {
+    background-color: yellow;
+    color: white;
+    padding: 20px;
+    margin-bottom: 10px;
+}
+.yellow-card p {
+    margin: 0;
+}
+
