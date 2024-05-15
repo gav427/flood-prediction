@@ -95,15 +95,15 @@ function handleEmail(req, res) {
             host: 'smtp.ethereal.email',
             port: 587,
             auth: {
-                user: 'zack55@ethereal.email',
-                pass: 'qYf5yZtvmbwt8YujnE'
+                user: 'oren.jacobson@ethereal.email',
+                pass: 'dFqPEw4KJhgAUrFzBG'
             }
         });
 
         // Loop through users and send email to each
         usersData.forEach(user => {
             const mailOptions = {
-                from: 'zack55@ethereal.email',
+                from: 'oren.jacobson@ethereal.email',
                 to: user.email,
                 subject: 'Flood Alert',
                 text: content
