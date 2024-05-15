@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood Management System - Registration</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<style>
+    body {
+        background-color: blue;
+    }
+</style>
+<body>
+    <div class="container">
+        <h1>Registration Form</h1>
+        <form id="registrationForm">
+            <div class="form-group">
+                <label for="fullName">Full Name:</label>
+                <input type="text" id="fullName" name="fullName" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password:</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+            </div>
+            <div class="form-group">
+                <label for="region">Region:</label>
+                <select id="region" name="region" required>
+                    <option value="">Select Region</option>
+                    <option value="Saidapet">Saidapet</option>
+                    <option value="Tamabaram">Tamabaram</option>
+                    <option value="Tirusulam">Tirusulam</option>
+                    <option value="Mambalam">Mambalam</option>
+                    <option value="Chennai Central">Chennai Central</option>
+                    <option value="Egmore">Egmore</option>
+                    <option value="Mambalam">Mambalam</option>
+                    <option value="Guindy">Guindy</option>
+                    <option value="Urapakkam">Urapakkam</option>
+                    <option value="Chennai Beach">Chennai Beach</option>
+                </select>
+            </div>
+            
+            <button type="submit">Register</button>
+        </form>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

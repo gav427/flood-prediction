@@ -1,0 +1,123 @@
+/* Existing styles */
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 10px 0;
+}
+
+nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+nav ul li {
+    display: inline;
+    margin-right: 20px;
+}
+
+nav ul li:last-child {
+    margin-right: 0;
+}
+
+nav ul li a {
+    color: #fff;
+    text-decoration: none;
+    padding: 5px 10px;
+}
+
+nav ul li a:hover {
+    background-color: #555;
+}
+
+.content {
+    padding: 20px;
+}
+
+footer {
+    background-color: #333;
+    color: #fff;
+    padding: 10px 0;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+}
+
+/* Weather cards styles */
+.weather-container {
+    display: flex;
+    flex-wrap: nowrap; /* Prevent wrapping to next line */
+    overflow-x: auto; /* Enable horizontal scrolling if necessary */
+    gap: 20px;
+    padding-bottom: 20px; /* Add padding to the bottom for spacing */
+    width: 100%; /* Ensure the container takes full width */
+    overflow-x: auto; /* Add horizontal scrolling if necessary */
+}
+
+.weather-card {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    flex: 0 0 auto; /* Allow cards to shrink or grow */
+    min-width: 250px; /* Set a minimum width for each card */
+    margin-right: 20px; /* Add margin for spacing between cards */
+}
+
+.weather-card:last-child {
+    margin-right: 0; /* Remove margin from the last card */
+}
+
+.weather-card .date {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.weather-card .weather-info {
+    display: flex;
+    justify-content: space-between;
+}
+
+.weather-card .description {
+    color: #333;
+}
+
+.weather-card .temperature {
+    color: #777;
+}
+/* Red and yellow cards styles */
+.side-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding-top: 20px; /* Add padding to the top for spacing */
+}
+
+.red-card, .yellow-card {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: calc(50% - 20px); /* Adjust card width based on your layout */
+}
+
+.red-card h3, .yellow-card h3 {
+    color: red;
+}
+
+.yellow-card h3 {
+    color: yellow;
+}
+/* CSS styles to color the cards as red */
+.red-card {
+    background-color: red;
+    color: white;
+    padding: 20px;
+    margin-bottom: 10px;
+}
+.red-card p {
+    margin: 0;
+}
+
+
